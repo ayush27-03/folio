@@ -1,0 +1,42 @@
+name: Custom Static Deployment
+
+# 1. THE TRIGGER: When should this pipeline run?
+on:
+  push:
+    branches: ["main"] # Run every time you push to main
+  workflow_dispatch:   # This allows you to manually click a "Run workflow" button in the UI
+
+# 2. PERMISSIONS: What is this script allowed to do?
+permissions:
+  contents: read
+  pages: write      # Needs permission to write to GitHub Pages
+  id-token: write
+
+# 3. CONCURRENCY: Prevent two pipelines from deploying at the exact same time
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+# 4. THE JOB: The actual work to be done
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest # Spins up a fresh Ubuntu Linux server!
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 # Pulls your repo code onto the Ubuntu server
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # Packages your HTML/CSS/JS into a deployable zip file
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4 # Pushes that zip file to the live web server
